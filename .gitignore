@@ -1,0 +1,5 @@
+/target/
+.DS_Store
+xcuserdata/
+Package.resolved
+build
