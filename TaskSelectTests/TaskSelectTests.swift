@@ -15,8 +15,14 @@ final class TaskSelectTests: XCTestCase {
     // true is taska, false is taskb
     var choice: Bool = false {
         didSet {
+            // emulate some random task durations
+            let durationa = UInt64.random(in: 150 ... 250)
+            let durationb = UInt64.random(in: 50 ... 150)
+            let maxDuration = max(durationa, durationb)
+            let minDuration = min(durationa, durationb)
+            
             self.values = [12, 21]
-            self.timeouts = [(choice ? 100 : 200), (choice ? 200 : 100)]
+            self.timeouts = [(choice ? minDuration : maxDuration), (choice ? maxDuration : minDuration)]
             self.taska = Task<Int, Error> {
                 // emulate some work
                 try await Task.sleep(nanoseconds: NSEC_PER_MSEC * timeouts[0])
@@ -78,6 +84,7 @@ final class TaskSelectTests: XCTestCase {
 
         Log4swift[Self.self].info("---------------------")
         Log4swift[Self.self].info("starting with the expectation to get: \(expectedValue) from: \(choice ? "taska" : "taskb")")
+        Log4swift[Self.self].info("taska.duration: \(self.timeouts[0]) taskb.duration: \(self.timeouts[1])")
 
         // testing ...
         let test = Task {
@@ -147,7 +154,7 @@ final class TaskSelectTests: XCTestCase {
                     do {
                         _ = try await theSelectTask.value
                     } catch {
-                        var isCanceled: Bool = {
+                        let isCanceled: Bool = {
                             guard let error = error as? TaskSelectError,
                                   error == TaskSelectError.canceled
                             else { return false }
